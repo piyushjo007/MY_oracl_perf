@@ -334,6 +334,8 @@ select * from table(dbms_xplan.display_cursor('&sql_d'));
 set lines 300 pages 1000
 select * from table(dbms_xplan.display_cursor(SQL_ID=>'&SQ_ID',FORMAT=>'+ALLSTATS'));
 
+SELECT * FROM table(DBMS_XPLAN.DISPLAY_CURSOR(SQL_ID=>'&SQ_ID',FORMAT=>'OUTLINE BASIC NOTE'));
+
 
 
 Get execution plan of sqlid (awr)
@@ -1287,6 +1289,7 @@ drop sql profile
 EXEC DBMS_SQLTUNE.ALTER_SQL_PROFILE('coe_9jjfngjrf731h_132962588','STATUS','DISABLED');
 
 ————————————————————————————————————————————————————————
+SELECT * FROM table(DBMS_XPLAN.DISPLAY_CURSOR(FORMAT=>'OUTLINE BASIC NOTE'));
 
 
 ————————————————————————————————————————————————————————
