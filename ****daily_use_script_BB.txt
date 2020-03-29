@@ -342,7 +342,9 @@ Get execution plan of sqlid (awr)
 
 set lines 300 pages 1000
 select * from table(dbms_xplan.display_awr('&sql_d'));
-
+------------------------------------------
+select * from table(dbms_xplan.display_cursor(SQL_ID=>'&SQ_ID',FORMAT=>’Alias’));
+select * from table(dbms_xplan.display_cursor(SQL_ID=>'&SQ_ID',FORMAT=>'typical alias -rows -bytes -cost'));
 
 ————————————————————————————————————————————————————————
 Runtime of sql query
