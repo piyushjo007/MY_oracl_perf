@@ -1,0 +1,136 @@
+How to Identify Hot Blocks Within the Database Buffer Cache that may be Associated with 'latch: cache buffers chains' Wait Contention (Doc ID 163424.1)
+
+
+>>>>>>>>>>>>>>>>      <<<<<<<<<<<<<<<<<<<<<<
+
+Identify high contention latch addresses
+
+First determine which latch addresses (ADDR) are interesting by examining the number of  sleeps for this latch. The higher the sleep count, the more processes are having to wait for that latch, so the higher the sleeps, the higher the contention. If we are investigating contention, the higher the sleeps the more interesting the latch addresses (ADDR) is. The following select returns latch addresses (ADDR) ordered by sleeps:
+
+SELECT child# "cCHILD" ,
+  addr "sADDR" ,
+  gets "sGETS" ,
+  misses "sMISSES" ,
+  sleeps "sSLEEPS"
+FROM v$latch_children
+WHERE name = 'cache buffers chains'
+ORDER BY 5,  1,  2,  3;
+
+Run the query above a few times to establish the addresses (ADDR) that consistently has the highest sleeps.
+
+Identify the blocks protected under that address
+
+==============================================================================
+
+
+Once the addresses (ADDR) with the highest sleep count have been determined, these latch addresses can be used to get more detail about the blocks currently in the buffer cache protected by this latch. The following query identifies the blocks protected by a particular ADDR and should be run just after determining the ADDR with the highest sleep count:
+
+column segment_name format a35
+SELECT  /*+ RULE */
+  e.owner  || '.'  || e.segment_name segment_name,
+  e.extent_id extent#,
+  x.dbablk - e.block_id + 1 block#,
+  x.tch,
+  l.child#
+FROM sys.v$latch_children l,
+  sys.v$bh x,
+  sys.dba_extents e
+WHERE x.hladdr = '&ADDR'
+AND e.file_id  = x.file#
+AND x.hladdr   = l.addr
+AND x.dbablk BETWEEN e.block_id AND e.block_id + e.blocks -1
+ORDER BY x.tch DESC ;
+Example Output:
+
+SEGMENT_NAME                     EXTENT#      BLOCK#       TCH    CHILD# 
+-------------------------------- ------------ ------------ ------ ---------- 
+SCOTT.EMP_PK                                5          474     17      7,668 
+SCOTT.EMP                                   1          449      2      7,668
+
+
+
+The TCH column identifies the number of times each block has been hit by a SQL statement, so you can use this information to identify a hot block. The higher the value of the TCH column, the more frequent the block is accessed by SQL statements.
+
+==============================================================================
+
+The following query joins with DBA_OBJECTS to find the objects waiting, the misses, sleeps, etc:
+
+WITH bh_lc AS
+  (SELECT
+    /*+ ORDERED */
+    lc.addr,
+    lc.child#,
+    lc.gets,
+    lc.misses,
+    lc.immediate_gets,
+    lc.immediate_misses,
+    lc.spin_gets,
+    lc.sleeps,
+    bh.hladdr,
+    bh.tch tch,
+    bh.file#,
+    bh.dbablk,
+    bh.class,
+    bh.state,
+    bh.obj
+  FROM x$kslld ld,
+    v$session_wait sw,
+    v$latch_children lc,
+    x$bh bh
+  WHERE lc.addr  =sw.p1raw
+  AND sw.p2      = ld.indx
+  AND ld.kslldnam='cache buffers chains'
+  AND lower(sw.event) LIKE '%latch%'
+  AND sw.state ='WAITING'
+  AND bh.hladdr=lc.addr
+  )
+SELECT bh_lc.hladdr,
+  bh_lc.tch,
+  o.owner,
+  o.object_name,
+  o.object_type,
+  bh_lc.child#,
+  bh_lc.gets,
+  bh_lc.misses,
+  bh_lc.immediate_gets,
+  bh_lc.immediate_misses,
+  spin_gets,
+  sleeps
+FROM bh_lc,
+  dba_objects o
+WHERE bh_lc.obj = o.object_id(+)
+UNION
+SELECT bh_lc.hladdr,
+  bh_lc.tch,
+  o.owner,
+  o.object_name,
+  o.object_type,
+  bh_lc.child#,
+  bh_lc.gets,
+  bh_lc.misses,
+  bh_lc.immediate_gets,
+  bh_lc.immediate_misses,
+  spin_gets,
+  sleeps
+FROM bh_lc,
+  dba_objects o
+WHERE bh_lc.obj = o.data_object_id(+)
+ORDER BY 1,2 DESC;
+
+
+
+==============================================================================
+
+
+
+The output is something similar to the following:
+
+HLADDR           TCH   OWNER    OBJECT_NAME               OBJECT_TYP CHILD#  GETS   MISSES IMMEDIATE_GETS   IMMEDIATE_MISSES SPIN_GETS SLEEPS
+---------------- ----- -------- ------------------------- ---------- ------- ------ ------ ---------------- ---------------- --------- ------
+0000000621ED8B00   127 SABXFER  PCBDEMPRELEVEMENT         TABLE        80750 703326   1649             8007                0      1642      7
+0000000621ED8B00   127                                                 80750 703326   1649             8007                0      1642      7
+0000000621ED8B00    74 SABXFER  V_HIERARCHIEENTREPRISE_B  TABLE        80750 703326   1649             8007                0      1642      7
+0000000621ED8B00     1 SABXFER  SACNTPR_PK                INDEX        80750 703326   1649             8007                0      1642      7
+0000000621ED8B00     1 SABXFER  SAENCR2_1                 TABLE        80750 703326   1649             8007                0      1642      7
+0000000621ED8B00     1                                                 80750 703326   1649             8007                0      1642      7
+0000000621ED8B00     0                                                 80750 703326   1649             8007                0      1642      7

@@ -1,0 +1,367 @@
+to check indexed column of a table :
+
+select TABLE_OWNER,table_name, index_name, column_name FROM dba_ind_columns Where table_name='&TABLE_NAM';
+
+=======================================================
+table accessed maximum (hottables)
+
+
+select * from 
+(SELECT  
+   COUNT (*),
+   object_name
+FROM
+   v$sql_plan
+WHERE
+   operation = 'TABLE ACCESS' 
+GROUP BY
+   object_name
+ORDER BY COUNT (*) DESC) where rownum < 40;
+
+
+=================
+
+select p1,p2,count(*) from v$session_wait WHERE event = 'read by other session' group by p2,p1 order by 1
+
+http://ankrose.blogspot.com/2010/02/finding-hot-blocks.html
+
+
+
+=======================================================
+
+=======================================================
+check table relation
+
+select table_name from DBA_constraints
+where r_constraint_name in
+  (select constraint_name 
+     from DBA_constraints
+     where constraint_type in ('P','U')
+     and table_name = upper('&tableOfInterest')
+  ) ;
+  
+
+=======================================================
+NITIN sir
+
+
+set pages 1000
+set lines 300
+col INDEX_OWNER for a20
+col TABLE_OWNER for a20
+col COLUMN_NAME for a30
+col TABLE_NAME for a30
+col INDEX_NAME for a30
+select INDEX_OWNER,INDEX_NAME,TABLE_OWNER,TABLE_NAME,COLUMN_NAME,COLUMN_POSITION 
+from dba_ind_columns where table_name=upper('&Tabnme') order by INDEX_NAME,COLUMN_POSITION;
+
+
+	
+
+=======================================================
+Rahul :
+
+					set lines 200
+					col owner for a14
+					col column_name format a30
+					col table_owner for a14
+					col table_name for a30
+					col partition_name for a30
+					col high_value for a20
+					col partition_position for 999
+					
+					select owner,table_name,partitioning_type,subpartitioning_type,partition_count,def_ini_trans from dba_part_tables where upper(table_name)=upper('&&table_name') and upper(owner)= nvl(upper('&&owner'),owner);
+					
+					select * from dba_part_key_columns where upper(name)=upper('&&table_name') and upper(owner)=nvl(upper('&&owner'),owner);
+					
+					select table_owner,table_name,partition_name,subpartition_count,high_value,last_analyzed,num_rows,compression from dba_tab_partitions where upper(table_name)=upper('&table_name') and upper(table_owner)=nvl(upper('&owner'),table_owner);
+					
+					undefine table_name
+					undefine owner
+
+	
+tab.sql
+--------------------
+
+set lines 200
+col owner for a20
+col segment_name for a30
+col tablespace_name for a30
+col table_name for a30
+col partition_name for a30
+col degree for a8
+col instances for a8
+break on owner skip 1
+break on report
+compute sum of MB on report
+select owner,table_name,tablespace_name,ini_trans,num_rows,last_analyzed,blocks,empty_blocks,partitioned,trim(degree) "degree",trim(instances) "instances",compression from dba_tables where table_name=upper('&&table_name') and owner=nvl(upper('&&owner'),owner) order by owner ;
+select owner,segment_name,partition_name,tablespace_name,bytes/1024/1024 "MB",blocks from dba_segments where segment_name=upper('&table_name') and owner=nvl(upper('&owner'),owner) order by owner;
+select owner,table_name,LAST_ANALYZED,STATTYPE_LOCKED,STALE_STATS from dba_tab_statistics where TABLE_NAME=upper('&&table_name') and owner=nvl(upper('&&owner'),owner) ;
+undefine table_name
+undefine owner
+clear col
+clear breaks
+
+
+
+
+ind.sql
+--------------------
+set lines 500
+col owner for a20
+col index_owner for a20
+col table_name for a30
+col column_name for a30
+col degree for a8
+col instances for a8
+col index_type for a6
+col descend for a6
+col column_expression for a50
+break on table_owner skip 1 on owner skip 1 on table_name skip 1 on index_owner skip 1 on index_name skip 1
+
+select owner,table_name,index_name,index_type,uniqueness,ini_trans,blevel,status,num_rows,last_analyzed,trim(degree) degree,trim(instances) instances,partitioned from dba_indexes where table_name=upper('&&table_name') and owner=nvl(upper('&&owner'),owner) order by owner;
+
+select table_name,index_owner,index_name,column_name,column_position,descend     from dba_ind_columns where table_name=upper('&&table_name') and index_owner=nvl(upper('&&owner'),index_owner) order by index_owner,index_name,column_position;
+
+select table_owner,table_name,index_name,column_expression,column_position from dba_ind_expressions where table_name=upper('&table_name') and index_owner=nvl(upper('&owner'),index_owner) order by table_owner,index_name,column_position;
+
+undefine table_name
+undefine owner
+clear col
+clear breaks
+
+
+tabp.sql
+-----------------------
+
+set lines 200
+col owner for a14
+col column_name format a30
+col table_owner for a14
+col table_name for a30
+col partition_name for a30
+col high_value for a20
+col partition_position for 999
+
+select owner,table_name,partitioning_type,subpartitioning_type,partition_count,def_ini_trans from dba_part_tables where upper(table_name)=upper('&&table_name') and upper(owner)=nvl(upper('&&owner'),owner);
+
+select * from dba_part_key_columns where upper(name)=upper('&&table_name') and upper(owner)=nvl(upper('&&owner'),owner);
+
+select table_owner,table_name,partition_name,subpartition_count,high_value,last_analyzed,num_rows,compression from dba_tab_partitions where upper(table_name)=upper('&table_name') and upper(table_owner)=nvl(upper('&owner'),table_owner);
+
+undefine table_name
+undefine owner
+
+indfrag.sql
+------------------------
+
+
+set serverout on size 1000000;
+var INDEX_NAME varchar2(100);
+var OWNER varchar2(30);
+exec :INDEX_NAME:='&IND_NAME';
+exec :OWNER:='&SCHEMA';
+DECLARE
+    t_db_block_size v$parameter.value%type;
+    t_no_of_itl dba_indexes.ini_trans%type;
+    t_key_rowid_spac_avail number;
+    t_pctfree dba_indexes.PCT_FREE%TYPE;
+    t_bytes_per_entry_cons NUMBER;
+    t_cnt_char NUMBER;
+    t_cnt_varchar NUMBER;
+    t_data_len NUMBER;
+    t_numrows NUMBER;
+    t_total_cons NUMBER;
+    CURSOR C_GET_COLS
+    is
+    select a.column_name,a.NUM_NULLS,c.AVG_COL_LEN,a.owner,b.index_name from
+    dba_tab_col_statistics a,dba_ind_columns b,dba_tab_columns c
+    where a.COLUMN_NAME=b.COLUMN_NAME and b.TABLE_NAME=a.TABLE_NAME
+    and b.COLUMN_NAME=c.COLUMN_NAME and b.TABLE_NAME=c.TABLE_NAME
+    and a.owner=b.TABLE_OWNER
+    and b.INDEX_NAME=:INDEX_NAME
+     AND b.INDEX_OWNER=:OWNER;
+
+    t_calc_blocks NUMBER;
+    t_blocks NUMBER;
+    t_header number;
+    t_ratio number(10,2);
+    t_owner dba_indexes.owner%type;
+    t_size dba_segments.bytes%type;
+    t_extents number;
+    t_minextents number;
+BEGIN
+
+select owner into t_owner from dba_indexes where index_name=:index_name AND owner=:OWNER;
+
+dbms_output.put_line('Calculations for index '||t_owner||'.'||:index_name);
+dbms_output.put_line('*************INDEX DATA*********************');
+select sum(bytes)/1024/1024 into t_size from dba_segments where segment_name=:index_name and owner=:OWNER group by segment_name ;
+select sum(blocks) into t_blocks from   dba_extents      where segment_name=:index_name and owner=:OWNER;
+select count(*) into t_extents from dba_extents where segment_name=:index_name and owner=:OWNER ;
+select MIN_EXTENTS into t_minextents from dba_indexes  where index_name=:index_name and owner=:OWNER;
+dbms_output.put_line('Size of Index(MB):='||t_size);
+dbms_output.put_line('No of blocks in the index:='||t_blocks);
+dbms_output.put_line('No of extents in the index:='||t_extents);
+dbms_output.put_line('min_extents for the index:='||t_minextents);
+
+
+/********************************************************************/
+/****Step1: Calculation of Space available in an Index block********/
+/******Space =block size - Header (113 + 23 * No. of ITL )**********/
+/********************************************************************/
+dbms_output.put_line('************STEP 1***************');
+
+select value into t_db_block_size from v$parameter where name='db_block_size';
+dbms_output.put_line('block_size used for index blocks :='||t_db_block_size);
+
+select INI_TRANS,PCT_FREE into t_no_of_itl,t_pctfree from dba_indexes where index_name=:index_name and owner=:OWNER;
+
+dbms_output.put_line('no_of_itl :='||t_no_of_itl||'  pctfree:='||t_pctfree);
+t_header:=113+23*t_no_of_itl;
+
+t_key_rowid_spac_avail:=(t_db_block_size-(113+23*t_no_of_itl))*(1-t_pctfree/100);
+dbms_output.put_line('spac_avail_per_block:((db_blocksize-(113+23*No_ofITL))*(1-pctfree/100)) :='||t_key_rowid_spac_avail);
+
+/****************************************************************************************/
+/*    Step2. Space consumed by one  key-rowid pair , in the leaf blocks                         */
+/*     bytes per entry(B) = entry header(1) + ROWID length(6) +                                                 */
+/*     no. of columns of type (char,date,number) + no of columns of type (varchar2) * 3 */
+/*    +combined length of component columns of the index (D)                                                    */
+/****************************************************************************************/
+
+
+dbms_output.put_line('************STEP 2***************');
+
+SELECT COUNT(*) INTO t_cnt_char FROM dba_tab_columns B,dba_ind_columns A where A.COLUMN_NAME=B.COLUMN_NAME
+AND A.TABLE_NAME=B.TABLE_NAME AND A.INDEX_NAME=:index_name AND A.INDEX_OWNER=:OWNER and a.table_owner=b.owner and B.data_type
+IN ('NUMBER','CHAR','NCHAR','DATE');
+dbms_output.put_line('no of char/date/number fields in the index :='||t_cnt_char);
+
+SELECT COUNT(*) INTO t_cnt_varchar FROM dba_tab_columns B,dba_ind_columns A where A.COLUMN_NAME=B.COLUMN_NAME
+AND A.TABLE_NAME=B.TABLE_NAME AND A.INDEX_NAME=:index_name AND A.INDEX_OWNER=:OWNER  AND  a.table_owner=b.owner and B.data_type
+IN ('VARCHAR2','NVARCHAR2');
+dbms_output.put_line('no of varchar fields in the index :='||t_cnt_varchar);
+
+select sum(DATA_LENGTH) into t_data_len from  dba_tab_columns B,dba_ind_columns A
+where A.COLUMN_NAME=B.COLUMN_NAME AND A.TABLE_NAME=B.TABLE_NAME AND
+a.table_owner=b.owner AND a.table_owner=b.owner AND A.INDEX_NAME=:index_name AND A.INDEX_OWNER=:OWNER;
+dbms_output.put_line('Combined length of data :='||t_data_len);
+
+t_bytes_per_entry_cons:=1+6+t_cnt_char+t_cnt_varchar*3+t_data_len;
+dbms_output.put_line('Space consumed by one index_entry in leaf block=(1+6+cnt_of_chars_dateflds+3Xcnt_of_varchars+data_length:='||t_bytes_per_entry_cons);
+
+/****************************************************************************************/
+/*  Step 3. Total space consumed by key-rowid pair, for the whole index =                               */
+/*      num_rows from dba_indexes for the index * (B - D)                                                               */
+/*       +( (num_rows from dba_indexes - num_nulls from dba_tab_col_statistics)                 */
+/*          * AVG(VSIZE(<column names >)) + num_nulls from dba_tab_col_statistics)              */
+/*      + ........ for all component columns for the index.                                                             */
+/****************************************************************************************/
+dbms_output.put_line('************STEP 3***************');
+
+select num_rows into t_numrows from dba_indexes where index_name=:index_name AND OWNER=:OWNER;
+dbms_output.put_line('numrows (from dba_indexes)='||t_numrows);
+
+t_total_cons:=t_numrows*(t_bytes_per_entry_cons-t_data_len);
+--dbms_output.put_line('t_total_cons='||t_total_cons);
+
+FOR r_get_cols in C_GET_COLS
+LOOP
+    dbms_output.put_line('num_nulls for column '||r_get_cols.column_name||'='||r_get_cols.num_nulls);
+    dbms_output.put_line('AVG_COL_LEN='||r_get_cols.AVG_COL_LEN);
+        t_total_cons:=t_total_cons+(t_numrows-r_get_cols.num_nulls)*r_get_cols.AVG_COL_LEN+r_get_cols.num_nulls;
+END LOOP;
+dbms_output.put_line('total byte consumption of the index='||t_total_cons);
+
+/*Segment header(1) +  num_rows from dba_indexes /(floor(14541(step1)/(Total space consumed by key-rowid pair (step 3)/num_rows from dba_indexes))*1.2
+*/
+
+dbms_output.put_line('************STEP 4***************');
+
+t_calc_blocks:=round((floor(t_total_cons)/floor(t_key_rowid_spac_avail))*1.2);
+dbms_output.put_line('Calculated no of blocks:(total byte consumption of the index/space consumed by one index_entry )= '||t_calc_blocks);
+
+
+dbms_output.put_line('Actual no of blocks='||t_blocks);
+dbms_output.put_line('Actual no of blocks*0.6='||t_blocks * 0.6);
+if t_calc_blocks<>0 then
+        select t_blocks/t_calc_blocks into t_ratio from dual;
+else
+        t_ratio:=t_blocks;
+end if;
+
+if t_extents<>t_minextents then
+
+        dbms_output.put_line('IF THE ACTUAL NO OF BLOCKS * 0.6 > CALCULATED BLOCKS, THE INDEX IS FRAGMENTED');
+        IF (t_blocks*0.6)>t_calc_blocks then
+                dbms_output.put_line('ratio of actual_blocks/calculated blocks='||t_ratio);
+                dbms_output.put_line('Index appears to be fragmented. Advised rebuilding');
+        END IF;
+ELSE
+        dbms_output.put_line('actual no of blocks are the minimum required as no of extents is equal to minextents');
+END IF;
+
+end;
+/
+
+
+
+
+
+
+=======================================================
+select sql_id ,SQL_FULLTEXT,EXECUTIONS,SQL_TEXT from v$sqlarea where SQL_TEXT like '%DS_PRS_PUB%'
+
+
+
+
+
+
+select SQL_ID,top_level_sql_id,sql_text from dba_hist_sqltext where SQL_ID ='1a314tgvgdvur';
+
+
+
+
+=======================================================
+
+to check local or not (INDEX)
+
+indloc.sql
+
+
+select 
+INDEX_NAME,TABLE_NAME,PARTITIONING_TYPE,PARTITION_COUNT,locality 
+from 
+dba_part_indexes 
+where 
+index_name in (
+select INDEX_NAME from dba_indexes 
+where table_name=upper('&tabln')
+ and owner=nvl(upper('&ownr'),owner)
+  ) ;
+
+
+
+=======================================================
+
+
+=======================================================
+
+
+=======================================================
+
+
+=======================================================
+
+
+=======================================================
+
+
+=======================================================
+
+
+=======================================================
+
+
+

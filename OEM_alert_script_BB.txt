@@ -1,0 +1,41 @@
+SELECT   'Avg commit wait between '|| min(to_char(a.BEGIN_TIME,'MM-DD-YYYY HH24:MI:SS'))
+||' and '||max(to_char(a.END_TIME,'MM-DD-YYYY HH24:MI:SS')) ||' is : '||round(sum(a.TIME_WAITED*10)/sum(decode(a.WAIT_COUNT,0,1)))||' ms'  GSD_COMMIT_WAIT
+from V$WAITCLASSMETRIC_HISTORY a, V$SYSTEM_WAIT_CLASS B
+where a.WAIT_CLASS_ID = b.WAIT_CLASS_ID
+and a.END_TIME >= (sysdate - (1/86400)*320 )
+and b.wait_class = 'Commit'
+group by b.WAIT_CLASS
+having sum(a.TIME_WAITED*10)/sum(a.WAIT_COUNT) > 200;
+
+
+
+SELECT   'Avg commit wait between '|| min(to_char(a.BEGIN_TIME,'MM-DD-YYYY HH24:MI:SS'))
+||' and '||max(to_char(a.END_TIME,'MM-DD-YYYY HH24:MI:SS')) ||' is : '||round(sum(a.TIME_WAITED*10)/sum(decode(a.WAIT_COUNT,0,1)))||' ms'  GSD_COMMIT_WAIT
+from V$WAITCLASSMETRIC_HISTORY a, V$SYSTEM_WAIT_CLASS B
+where a.WAIT_CLASS_ID = b.WAIT_CLASS_ID
+and a.END_TIME >= (sysdate - (1/86400)*320 )
+group by b.WAIT_CLASS
+having sum(a.TIME_WAITED*10)/sum(a.WAIT_COUNT) > 200
+
+
+dww4x1yx47tyw done 
+fp4chp9sy0v4g done
+fxj7480buwtyk done
+
+
+SELECT   'Avg commit wait between '|| min(to_char(a.BEGIN_TIME,'MM-DD-YYYY HH24:MI:SS'))
+||' and '||max(to_char(a.END_TIME,'MM-DD-YYYY HH24:MI:SS')) ||' is : '||round(sum(a.TIME_WAITED*10)/sum(decode(a.WAIT_COUNT,0,1)))||' ms'  GSD_COMMIT_WAIT
+from V$WAITCLASSMETRIC_HISTORY a, V$SYSTEM_WAIT_CLASS B
+where a.WAIT_CLASS_ID = b.WAIT_CLASS_ID
+and a.END_TIME >= (sysdate - (1/86400)*320 )
+and b.wait_class = 'Commit'
+group by b.WAIT_CLASS
+having sum(a.TIME_WAITED*10)/sum(a.WAIT_COUNT) > 200
+
+
+SELECT   WAIT_CLASS|| min(to_char(a.BEGIN_TIME,'MM-DD-YYYY HH24:MI:SS'))
+||' and '||max(to_char(a.END_TIME,'MM-DD-YYYY HH24:MI:SS')) ||' is : '||round(sum(a.TIME_WAITED*10)/sum(decode(a.WAIT_COUNT,0,1)))||' ms'  GSD_COMMIT_WAIT
+from V$WAITCLASSMETRIC_HISTORY a, V$SYSTEM_WAIT_CLASS B
+where a.WAIT_CLASS_ID = b.WAIT_CLASS_ID
+and a.END_TIME >= (sysdate - (1/86400)*320 )
+group by b.WAIT_CLASS;

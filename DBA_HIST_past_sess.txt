@@ -1,0 +1,8 @@
+to check past blocking events
+
+
+select SAMPLE_TIME,SESSION_ID,SESSION_SERIAL#,BLOCKING_SESSION,BLOCKING_SESSION_SERIAL#,event,WAIT_CLASS,TIME_WAITED from
+v$active_session_history where SAMPLE_TIME > sysdate - (&hour/24) and
+event='enq: CF - contention';
+
+select BEGIN_TIME,END_TIME,METRIC_NAME,METRIC_UNIT,MINVAL,MAXVAL,AVERAGE,STANDARD_DEVIATION from DBA_HIST_SYSMETRIC_SUMMARY where BEGIN_TIME > sysdate - &strt_time and END_TIME < &end_time and METRIC_NAME='User Commits Per Sec'

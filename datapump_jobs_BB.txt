@@ -1,0 +1,25 @@
+DBA_DATAPUMP_JOBS
+This view will show the active Data Pump jobs, their state, degree of parallelism, and the number of sessions attached.
+
+SQL> select * from dba_datapump_jobs
+
+OWNER_NAME JOB_NAME               OPERATION  JOB_MODE   STATE         DEGREE    ATTACHED_SESSIONS
+---------- ---------------------- ---------- ---------- ------------- --------- -----------------
+JKOOP      SYS_EXPORT_FULL_01     EXPORT     FULL       EXECUTING     1          1
+JKOOP      SYS_EXPORT_SCHEMA_01   EXPORT     SCHEMA     EXECUTING     1          1
+
+DBA_DATAPUMP_SESSIONS
+This view give gives the SADDR that assist in determining why a Data Pump session may be having problems. Join to the V$SESSION view for further information.
+
+SQL> SELECT * FROM DBA_DATAPUMP_SESSIONS
+
+OWNER_NAME JOB_NAME                       SADDR
+---------- ------------------------------ --------
+JKOOPMANN  SYS_EXPORT_FULL_01             225BDEDC
+JKOOPMANN  SYS_EXPORT_SCHEMA_01           225B2B7C
+
+
+
+
+
+SELECT a.OWNER_NAME,a.JOB_NAME,a.SADDR,b.SID,b.SERIAL#,b.USERNAME,b.OSUSER,b.PROGRAM FROM DBA_DATAPUMP_SESSIONS a join v$session b on a.SADDR=b.SADDR ;

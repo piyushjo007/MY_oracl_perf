@@ -1,0 +1,28 @@
+to check swappiness parameter : 60 is optimal 50 RAM and 50 SWAP
+
+cat /proc/sys/vm/swappiness
+
+
+
+swap used :
+
+free | grep Swap | awk '{printf "%s used is %0.2f%% of Total\n", $1,$3*100/$2}'
+
+
+
+
+SAMPLE_TIME>TIMESTAMP '2018-05-31 20:00:00 +0:00'
+and SAMPLE_TIME<TIMESTAMP '2018-05-31 23:50:00 +0:00'
+
+
+
+select distinct top_level_sql_id from dba_hist_active_sess_history where session_id=1815 and SESSION_SERIAL#=3749 and SAMPLE_TIME>TIMESTAMP '2018-05-31 20:00:00 +0:00' and SAMPLE_TIME<TIMESTAMP '2018-05-31 23:50:00 +0:00';
+
+
+
+JDBC Thin Client
+
+select sql_id,event,count(*) from dba_hist_active_sess_history where PROGRAM='JDBC Thin Client' and SAMPLE_TIME>TIMESTAMP '2018-05-31 20:00:00 +0:00' and SAMPLE_TIME<TIMESTAMP '2018-05-31 23:50:00 +0:00' group by sql_id,event order by 1,2;
+
+
+

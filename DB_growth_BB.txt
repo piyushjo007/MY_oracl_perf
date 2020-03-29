@@ -1,0 +1,136 @@
+Some background,  Oracle AWR by default collects the information about the segment growth periodically. This information can be queried using views DBA_HIST_SEG_STAT.
+
+Script #1 : script to display table size changes between two periods. 
+
+column "Percent of Total Disk Usage" justify right format 999.99 
+column "Space Used (MB)" justify right format 9,999,999.99 
+column "Total Object Size (MB)" justify right format 9,999,999.99 
+set linesize 150 
+set pages 80 
+set feedback off 
+select * from (select to_char(end_interval_time, 'MM/DD/YY') mydate, sum(space_used_delta) / 1024 / 1024 "Space used (MB)", avg(c.bytes) / 1024 / 1024 "Total Object Size (MB)", 
+round(sum(space_used_delta) / sum(c.bytes) * 100, 2) "Percent of Total Disk Usage" 
+from 
+   dba_hist_snapshot sn, 
+   dba_hist_seg_stat a, 
+   dba_objects b, 
+   dba_segments c 
+where begin_interval_time > trunc(sysdate) - &days_back 
+and sn.snap_id = a.snap_id 
+and b.object_id = a.obj# 
+and b.owner = c.owner 
+and b.object_name = c.segment_name 
+and c.segment_name = '&segment_name' 
+group by to_char(end_interval_time, 'MM/DD/YY')) 
+order by to_date(mydate, 'MM/DD/YY');
+
+ 
+
+Script #2:-  Database Growth in 1 hour intervals
+
+Declare 
+    v_BaselineSize    number(20); 
+    v_CurrentSize    number(20); 
+    v_TotalGrowth    number(20); 
+    v_Space        number(20); 
+    cursor usageHist is 
+            select a.snap_id, 
+            SNAP_TIME, 
+            sum(TOTAL_SPACE_ALLOCATED_DELTA) over ( order by a.SNAP_ID) ProgSum 
+        from 
+            (select SNAP_ID, 
+                sum(SPACE_ALLOCATED_DELTA) TOTAL_SPACE_ALLOCATED_DELTA 
+            from DBA_HIST_SEG_STAT 
+            group by SNAP_ID 
+            having sum(SPACE_ALLOCATED_TOTAL) <> 0 
+            order by 1 ) a, 
+            (select distinct SNAP_ID, 
+                to_char(END_INTERVAL_TIME,'DD-Mon-YYYY HH24:Mi') SNAP_TIME 
+            from DBA_HIST_SNAPSHOT) b 
+        where a.snap_id=b.snap_id; 
+Begin 
+    select sum(SPACE_ALLOCATED_DELTA) into v_TotalGrowth from DBA_HIST_SEG_STAT; 
+    select sum(bytes) into v_CurrentSize from dba_segments; 
+    v_BaselineSize := v_CurrentSize - v_TotalGrowth ;
+
+    dbms_output.put_line('SNAP_TIME           Database Size(MB)');
+
+    for row in usageHist loop 
+            v_Space := (v_BaselineSize + row.ProgSum)/(1024*1024); 
+        dbms_output.put_line(row.SNAP_TIME || '           ' || to_char(v_Space) ); 
+    end loop; 
+end;
+
+ 
+
+Script #3: Top 50 Query which can be used to query segments with highest growth. This will also report the present size of the segment which is very useful in identifying the growth percentage.
+
+SELECT o.OWNER , o.OBJECT_NAME , o.SUBOBJECT_NAME , o.OBJECT_TYPE , 
+    t.NAME "Tablespace Name", s.growth/(1024*1024) "Growth in MB", 
+    (SELECT sum(bytes)/(1024*1024) 
+    FROM dba_segments 
+    WHERE segment_name=o.object_name) "Total Size(MB)" 
+FROM DBA_OBJECTS o, 
+    ( SELECT TS#,OBJ#, 
+        SUM(SPACE_USED_DELTA) growth 
+    FROM DBA_HIST_SEG_STAT 
+    GROUP BY TS#,OBJ# 
+    HAVING SUM(SPACE_USED_DELTA) > 0 
+    ORDER BY 2 DESC ) s, 
+    v$tablespace t 
+WHERE s.OBJ# = o.OBJECT_ID 
+AND s.TS#=t.TS# 
+AND rownum < 51 
+ORDER BY 6 DESC 
+/
+
+ 
+
+Script #4: List object growth over last N days, sorted by growth desc 
+
+set feedback on 
+select * from (select c.TABLESPACE_NAME,c.segment_name “Object Name”,b.object_type, 
+sum(space_used_delta) / 1024 / 1024 “Growth (MB)” 
+from dba_hist_snapshot sn, 
+dba_hist_seg_stat a, 
+dba_objects b, 
+dba_segments c 
+where begin_interval_time > trunc(sysdate) – &days_back 
+and sn.snap_id = a.snap_id 
+and b.object_id = a.obj# 
+and b.owner = c.owner 
+and b.object_name = c.segment_name 
+and c.owner =’SIEBEL’ 
+group by c.TABLESPACE_NAME,c.segment_name,b.object_type) 
+order by 3 asc;
+
+ 
+
+Script #5: generates tablespace usage trend/growth.
+
+SET MARKUP HTML ON ENTMAP ON SPOOL ON PREFORMAT OFF; 
+set linesize 125 
+set numwidth 20 
+set pagesize 50 
+COL NAME FOR A30 
+col SNAP_ID for 9999999 
+set serveroutput off; 
+SPOOL TBS_TREND.xls; 
+set verify off; 
+set echo off;
+
+SELECT 
+distinct DHSS.SNAP_ID,VTS.NAME, 
+TO_CHAR(DHSS.END_INTERVAL_TIME, 'DD-MM HH:MI') AS SNAP_Time, 
+ROUND((DHTS.TABLESPACE_USEDSIZE*8192)/1024/1024)/&&max_instance_num AS USED_MB, 
+ROUND((DHTS.TABLESPACE_SIZE*8192)/1024/1024)/&&max_instance_num AS SIZE_MB 
+FROM DBA_HIST_TBSPC_SPACE_USAGE DHTS,V$TABLESPACE VTS,DBA_HIST_SNAPSHOT DHSS 
+WHERE VTS.TS#=DHTS.TABLESPACE_ID 
+AND DHTS.SNAP_ID=DHSS.SNAP_ID 
+AND DHSS.INSTANCE_NUMBER=1 
+AND TABLESPACE_ID=&id 
+ORDER BY 1; 
+SPOOL OFF;
+
+ 
+

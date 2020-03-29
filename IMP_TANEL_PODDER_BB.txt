@@ -1,0 +1,82 @@
+Tanel podder scripts : 
+
+download : http://tech.e2sn.com/oracle-scripts-and-tools
+
+
+
+https://blog.tanelpoder.com/2011/03/24/an-index-of-my-tpt-scripts/
+ 
+ 
+ 			bhla.sql      Report which blocks are in buffer cache, protected by a cache
+         bufprof.sql      Display buffer gets done by a session and their reason
+            calc.sql      Basic calculator and dec/hex converter       
+        channels.sql      Report KSR channel message counts by channel endpoints
+        curheaps.sql      Show main cursor data block heap sizes and their contents
+             dba.sql      Convert Data Block Address (a 6 byte hex number) to file#, block#
+             ddl.sql      Extracts DDL statements for specified objects
+              df.sql	  Show Oracle tablespace free space in Unix df style
+        diag_sid.sql      Display current Session Wait info            
+        diag_sid.sql      An easy to use Oracle session-level performance snapshot utility
+           disco.sql      Generates commands for disconnecting selected sessions
+     getplusparm.sql      get sqlplus parameter value (such linesize, pagesize, sqlcode,
+            grpn.sql      Quick group by query for aggregating Numeric columns
+            hash.sql      Show the hash value, SQL_ID and child number of previously
+             i2h.sql      Advanced Oracle Troubleshooting Seminar demo script
+              im.sql      Display In-Memory Undo (IMU) buffer usage    
+            init.sql 	  Initializes sqlplus variables for 156 character terminal
+       kglbroken.sql                                                   
+       kglbroken.sql      Report broken kgl locks for an object this can be used for 
+            kill.sql      Generates commands for killing selected sessions
+              la.sql      Show which latch occupies a given memory address and its stats
+     lastchanged.sql      Detect when a datablock in table was last changed
+       latchprof.sql      Perform high-frequency sampling on V$LATCHHOLDER
+   latchprof_old.sql      Perform high-frequency sampling on V$LATCHHOLDER
+      latchprofx.sql      Perform high-frequency sampling on V$LATCHHOLDER
+              lh.sql      Show latch holding SIDs and latch details from V$LATCHHOLDER
+             lhp.sql      Perform high-frequency sampling on V$LATCHHOLDER
+            lhpx.sql      Perform high-frequency sampling on V$LATCHHOLDER
+     lotshparses.sql      Generate Lots of hard parses and shared pool activity 
+    lotshparses2.sql      Generate Lots of hard parses and shared pool activity 
+        lotslios.sql      Generate Lots of Logical IOs for testing purposes
+        lotspios.sql      Generate Lots of Physical IOs for testing purposes
+     lotssparses.sql      Generate Lots of soft parses and library cache/mutex activity 
+    lotssparses2.sql      Generate Lots of soft parses and library cache/mutex activity 
+       mutexprof.sql      Display KGX mutex sleep history from v$mutex_sleep_history
+       nonshared.sql      Print reasons for non-shared child cursors from v$sql_shared_cursor
+      nonshared2.sql      Show the reasons why more child cursors were created instead of
+      ostackprof.sql      Take target process stack samples and show an execution profile
+            pmem.sql      Show process memory usage breakdown – lookup by process SPID
+     pmem_detail.sql      Show process memory usage breakdown details – lookup by process SPID
+        prefetch.sql      Show KCB layer prefetch                      
+          pvalid.sql      Show valid parameter values from V$PARAMETER_VALID_VALUES
+        rowcache.sql      Show parent rowcache entries mathcing an object name
+              rs.sql      Display available Redo Strands               
+               s.sql      Display current Session Wait and SQL_ID info (10g+)
+          sample.sql      Sample any V$ view or X$ table and display aggregated results
+      sampleaddr.sql      High-frequency sampling of contents of a SGA memory address
+             ses.sql      Display Session statistics for given sessions, filter by
+            ses2.sql      Display Session statistics for given sessions, filter by
+        sgastatx.sql      Show shared pool stats by sub-pool from X$KSMSS
+            smem.sql      Show process memory usage breakdown – lookup by session ID
+     smem_detail.sql      Show process memory usage breakdown details – lookup by session ID
+         snapper.sql      An easy to use Oracle session-level performance snapshot utility
+     snapper3.15.sql      An easy to use Oracle session-level performance snapshot utility
+      snapper_v1.sql      An easy to use Oracle session-level performance snapshot utility
+      snapper_v2.sql      An easy to use Oracle session-level performance snapshot utility
+            stat.sql      Execute SQL statement in script argument and report basic
+              sw.sql      Display current Session Wait info            
+             sw2.sql      Display current Session Wait info            
+             swg.sql      Display given Session Wait info grouped by state and event
+             swo.sql      Display current Session Wait info            
+          topsql.sql      Show TOP SQL ordered by user-provided criteria
+            usql.sql      Show another session’s SQL directly from library cache
+           usqlx.sql      Show another session’s SQL directly from library cache
+        waitprof.sql      Sample V$SESSION_WAIT at high frequency and show resulting 
+              xb.sql      Explain a SQL statements execution plan with execution 
+            xde2.sql      Describe X$ tables, column offsets and report indexed fixed table
+              xm.sql      Explain a SQL statements execution plan directly from library cache
+             xma.sql      Explain a SQL statements execution plan directly from library cache
+            xmai.sql      Explain a SQL statements execution plan with execution 
+             xms.sql      Explain your last SQL statements execution plan with execution 
+            xmsh.sql      Explain a SQL statements execution plan with execution 
+            xmsi.sql      Explain a SQL statements execution plan with execution
